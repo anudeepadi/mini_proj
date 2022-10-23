@@ -4,7 +4,7 @@ class Summarizer:
 
     def __init__(self, text):
         self.text = text
-        self.summarizer = pipeline("summarization")
+        self.summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
         self.summary = self.summarizer(self.text, max_length=100, min_length=30, do_sample=False)
 
     def get_summary(self):
