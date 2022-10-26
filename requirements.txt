@@ -119,9 +119,6 @@ mdurl==0.1.2
 MeaningCloud-python==2.0.0
 multidict==6.0.2
 murmurhash==1.0.8
-mysql==0.0.3
-mysql-connector-python-rf==2.2.2
-mysqlclient==2.1.1
 nest-asyncio==1.5.6
 newspaper3k==0.2.8
 nltk==3.2.5
@@ -163,7 +160,6 @@ pydeck==0.8.0b4.dev1
 pydub==0.25.1
 Pygments==2.13.0
 PyJWT==2.5.0
-pymongo==3.6.1
 Pympler==1.0.1
 PyNaCl==1.5.0
 pyparsing==3.0.9
