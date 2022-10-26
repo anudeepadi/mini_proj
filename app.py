@@ -1,19 +1,28 @@
-import streamlit as st
 from summarize import Summarizer
+from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
 
 
-def main():
-    st.title("Text Summarizer")
-    st.subheader("Enter the text you want to summarize")
-    text = st.text_area("Enter the text here")
-    if st.button("Summarize"):
-        summarizer = Summarizer(text)
-        summary = summarizer.get_summary()
-        st.write(summary[0]['summary_text'])
-        st.write(f"Original text length: {len(text)}")
-        st.write(f"Summary length: {len(summary[0]['summary_text'])}")
-        st.write(f"Summary is {100 - round((len(summary[0]['summary_text'])/len(text))*100)}% of the original text")
-        
+app = FastAPI(
+    title="Minor Project",
+    description="A simple API to summarize text",
+    version="0.1.0",  
+)
 
-if __name__ == "__main__":
-    main()
+app.get("/", response_class=PlainTextResponse)
+async def home():
+    return "Welcome to the home page"
+
+@app.post("/summarize", tags=["Summarize"])
+async def summarize(text: str, type: str):
+    summarizer = Summarizer()
+    return summarizer.get_summary(text, type)
+
+@app.post("/summarize_all", tags=["Summarize"])
+async def summarize_all(text: str):
+    summarizer = Summarizer(text)
+    text, summary, per = summarizer.get_all()
+    return text, summary, per
+
+
+
