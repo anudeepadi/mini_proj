@@ -2,3 +2,4 @@ transformers==4.22.2
 torch==1.12.1
 torchaudio==0.12.1
 torchvision==0.13.1
+streamlit==1.13.0
