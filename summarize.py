@@ -15,16 +15,11 @@ class Summarizer:
 
     def __init__(self):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
-        self.model = EncoderDecoderModel.from_encoder_decoder_pretrained('bert-base-uncased', 'bert-base-uncased')
-        self.model.to(self.device)
-        self.model.eval()
+        #self.newsum = pipeline("summarization", model='it5/it5-efficient-small-el32-news-summarization', tokenizer='it5/it5-efficient-small-el32-news-summarization', device=self.device)
         self.newsum = pipeline("summarization", model='it5/it5-efficient-small-el32-news-summarization')
-        self.t5 = SimpleT5()
         self.myclient = pymongo.MongoClient("mongodb+srv://m001-student:Factory2$@cluster0.qxiwj.mongodb.net/?retryWrites=true&w=majority")
         self.mydb = self.myclient["minor_project"]
         self.mycol = self.mydb["articles"]
-        self.model = SimpleT5()
 
     def get_summary(self, text, type):
         start = time.time()
@@ -51,14 +46,17 @@ class Summarizer:
         }
 
     def get_bert_summary(self, text):
-        inputs = self.tokenizer([text], max_length=1024, return_tensors='pt', truncation=True)
-        inputs.to(self.device)
-        outputs = self.model.generate(inputs['input_ids'], max_length=256, num_beams=4, early_stopping=True)
-        summary_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        return summary_text
+        tokenizer = BertTokenizerFast.from_pretrained('bert-large-uncased')
+        model = EncoderDecoderModel.from_encoder_decoder_pretrained('bert-large-uncased', 'bert-large-uncased')
+        model.to(self.device)
+        inputs = tokenizer(text, return_tensors='pt', max_length=512, truncation=True)
+        summary_ids = model.generate(inputs['input_ids'].to(self.device), num_beams=4, max_length=150, early_stopping=True)
+        return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
     def get_t5_summary(self, text): 
-        return self.model.predict(text)
+        model = SimpleT5()
+        model.from_pretrained("t5", "t5-base")
+        return model.predict(text)
 
     def sendToMongo(self, text, summary):
         mydict = {"text": text, "summary": summary}
