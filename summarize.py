@@ -4,10 +4,12 @@ import logging
 import torch
 import time
 import pymongo
+from simplet5 import SimpleT5
 # import re
 # from bleu import list_bleu
 
 logger = logging.getLogger(__name__)
+
 
 class Summarizer:
 
@@ -19,12 +21,22 @@ class Summarizer:
         self.myclient = pymongo.MongoClient("mongodb+srv://m001-student:Factory2$@cluster0.qxiwj.mongodb.net/?retryWrites=true&w=majority")
         self.mydb = self.myclient["minor_project"]
         self.mycol = self.mydb["articles"]
+        self.model = SimpleT5()
                                          
-    def get_summary(self, text):
+    def get_summary(self, text, type):
         start = time.time()
-        type = "article"
         if type.lower() == "article":
             summary_text = self.article_summarizer(text, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
+        elif type.lower() == "news":
+            inputs = self.tokenizer(text, return_tensors="pt", max_length=1024, truncation=True)
+            summary_ids = self.model.generate(inputs['input_ids'].to(self.device), num_beams=4, max_length=150, early_stopping=True)
+            summary_text = self.tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+        elif type.lower() == "t5":
+            from simplet5 import SimpleT5
+            model = SimpleT5()
+            model.from_pretrained(model_type="t5", model_name="t5-base")
+            model.load_model("t5",r"C:\Users\anude\Downloads\outputs\simplet5-epoch-2-train-loss-0.9493-val-loss-1.14", use_gpu=True)
+            summary_text = model.predict(text, num_beams=4, max_length=150, early_stopping=True)
         else:
             inputs = self.tokenizer([text], padding="max_length", truncation=True, max_length=512, return_tensors="pt")
             input_ids = inputs.input_ids.to(self.device)

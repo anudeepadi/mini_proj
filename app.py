@@ -14,9 +14,9 @@ async def home():
     return "Welcome to the home page"
 
 @app.post("/summarize", tags=["Summarize"])
-async def summarize(text: str):
+async def summarize(text: str, type: str):
     summarizer = Summarizer()
-    return summarizer.get_summary(text)
+    return summarizer.get_summary(text, type)
 
 @app.get("/getFromMongo", tags=["GetFromMongo"])
 async def getFromMongo():
