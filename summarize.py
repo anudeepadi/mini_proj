@@ -15,35 +15,27 @@ class Summarizer:
 
     def __init__(self):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.tokenizer = BertTokenizerFast.from_pretrained('mrm8488/bert-small2bert-small-finetuned-cnn_daily_mail-summarization')
-        self.model = EncoderDecoderModel.from_pretrained('mrm8488/bert-small2bert-small-finetuned-cnn_daily_mail-summarization').to(self.device)
-        self.article_summarizer = pipeline("summarization", "pszemraj/long-t5-tglobal-base-16384-book-summary", device=0 if torch.cuda.is_available() else -1)
+        self.tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
+        self.model = EncoderDecoderModel.from_encoder_decoder_pretrained('bert-base-uncased', 'bert-base-uncased')
+        self.model.to(self.device)
+        self.model.eval()
+        self.newsum = pipeline("summarization", model='it5/it5-efficient-small-el32-news-summarization')
+        self.t5 = SimpleT5()
         self.myclient = pymongo.MongoClient("mongodb+srv://m001-student:Factory2$@cluster0.qxiwj.mongodb.net/?retryWrites=true&w=majority")
         self.mydb = self.myclient["minor_project"]
         self.mycol = self.mydb["articles"]
         self.model = SimpleT5()
-                                         
+
     def get_summary(self, text, type):
         start = time.time()
-        if type.lower() == "article":
-            summary_text = self.article_summarizer(text, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
-        elif type.lower() == "news":
-            inputs = self.tokenizer(text, return_tensors="pt", max_length=1024, truncation=True)
-            summary_ids = self.model.generate(inputs['input_ids'].to(self.device), num_beams=4, max_length=150, early_stopping=True)
-            summary_text = self.tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-        elif type.lower() == "t5":
-            from simplet5 import SimpleT5
-            model = SimpleT5()
-            model.from_pretrained(model_type="t5", model_name="t5-base")
-            model.load_model("t5",r"C:\Users\anude\Downloads\outputs\simplet5-epoch-2-train-loss-0.9493-val-loss-1.14", use_gpu=True)
-            summary_text = model.predict(text, num_beams=4, max_length=150, early_stopping=True)
+        if type == "bert":
+            summary_text = self.get_bert_summary(text)
+        elif type == "t5":
+            summary_text = self.get_t5_summary(text)
+        elif type == "newsum":
+            summary_text = self.newsum(text)[0]['summary_text']
         else:
-            inputs = self.tokenizer([text], padding="max_length", truncation=True, max_length=512, return_tensors="pt")
-            input_ids = inputs.input_ids.to(self.device)
-            attention_mask = inputs.attention_mask.to(self.device)
-            output = self.model.generate(input_ids, attention_mask=attention_mask)
-            summary_text = self.tokenizer.decode(output[0], skip_special_tokens=True)
-            #summary_text = self.truecasing(summary_text)
+            summary_text = "Invalid type"
         end = time.time()
         try:
             self.sendToMongo(text, summary_text)
@@ -57,6 +49,16 @@ class Summarizer:
             "Length after Summarization": len(summary_text),
             "Percentage Reduction": 100 - round((len(summary_text)/len(text))*100)
         }
+
+    def get_bert_summary(self, text):
+        inputs = self.tokenizer([text], max_length=1024, return_tensors='pt', truncation=True)
+        inputs.to(self.device)
+        outputs = self.model.generate(inputs['input_ids'], max_length=256, num_beams=4, early_stopping=True)
+        summary_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        return summary_text
+
+    def get_t5_summary(self, text): 
+        return self.model.predict(text)
 
     def sendToMongo(self, text, summary):
         mydict = {"text": text, "summary": summary}
