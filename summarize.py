@@ -4,6 +4,7 @@ import logging
 import torch
 import time
 import pymongo
+import re
 from simplet5 import SimpleT5
 # import re
 # from bleu import list_bleu
@@ -22,6 +23,7 @@ class Summarizer:
         self.mycol = self.mydb["articles"]
 
     def get_summary(self, text, type):
+        text = self.preprocess(text)
         start = time.time()
         if type == "bert":
             summary_text = self.get_bert_summary(text)
@@ -44,6 +46,12 @@ class Summarizer:
             "Length after Summarization": len(summary_text),
             "Percentage Reduction": 100 - round((len(summary_text)/len(text))*100)
         }
+
+    def preprocess(self, text):
+        text = re.sub(r'\([^)]*\)', '', text)
+        text = re.sub('"','', text)
+        text = ' '.join(text.split())
+        return text
 
     def get_bert_summary(self, text):
         tokenizer = BertTokenizerFast.from_pretrained('bert-large-uncased')

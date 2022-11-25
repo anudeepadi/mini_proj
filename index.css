@@ -1,0 +1,38 @@
+.container{
+    
+    margin: 25vh;
+}
+button{
+    margin: 20px;
+    width: 100%;
+}
+
+body{
+    background-image: url('');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+   
+}
+h1{
+    font-family: 'Share Tech Mono';
+    text-align: center;
+    margin: 5px;
+}
+.wrapper{
+    
+    display: none;
+    justify-content: center;
+}
+.result{
+    
+    display: flex;
+    text-align: center;
+    justify-content: center;
+    flex-direction: column;
+}
+.area{
+margin: 25vh;
+   justify-content: center;
+   align-content: center;
+}
