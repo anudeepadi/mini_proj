@@ -55,10 +55,20 @@ class Summarizer:
 
     def get_bert_summary(self, text):
         tokenizer = BertTokenizerFast.from_pretrained('bert-large-uncased')
-        model = EncoderDecoderModel.from_encoder_decoder_pretrained('bert-large-uncased', 'bert-large-uncased')
-        model.to(self.device)
-        inputs = tokenizer(text, return_tensors='pt', max_length=512, truncation=True)
-        summary_ids = model.generate(inputs['input_ids'].to(self.device), num_beams=4, max_length=150, early_stopping=True)
+        model = EncoderDecoderModel.from_encoder_decoder_pretrained(tokenizer, tokenizer)
+        model.config.decoder_start_token_id = tokenizer.cls_token_id
+        model.config.eos_token_id = tokenizer.sep_token_id
+        model.config.pad_token_id = tokenizer.pad_token_id
+        model.config.vocab_size = model.config.encoder.vocab_size
+        model.config.max_length = 142
+        model.config.min_length = 56
+        model.config.no_repeat_ngram_size = 3
+        model.config.early_stopping = True
+        model.config.length_penalty = 2.0
+        model.config.num_beams = 4
+
+        input_ids = tokenizer.encode(text, return_tensors='pt', max_length=1024)
+        summary_ids = model.generate(input_ids)
         return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
     def get_t5_summary(self, text): 
