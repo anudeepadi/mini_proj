@@ -8,7 +8,7 @@ import re
 from simplet5 import SimpleT5
 # import re
 # from bleu import list_bleu
-from summarizer import Summarizer
+import summarizer
 
 logger = logging.getLogger(__name__)
 
@@ -17,27 +17,16 @@ class Summarizer:
 
     def __init__(self):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        #self.newsum = pipeline("summarization", model='it5/it5-efficient-small-el32-news-summarization', tokenizer='it5/it5-efficient-small-el32-news-summarization', device=self.device)
-        self.newsum = pipeline("summarization", model='it5/it5-efficient-small-el32-news-summarization')
+        self.newsum = pipeline("summarization", model='it5/it5-efficient-small-el32-news-summarization', tokenizer='it5/it5-efficient-small-el32-news-summarization')
         self.myclient = pymongo.MongoClient("mongodb+srv://m001-student:Factory2$@cluster0.qxiwj.mongodb.net/?retryWrites=true&w=majority")
         self.mydb = self.myclient["minor_project"]
         self.mycol = self.mydb["articles"]
 
-    def get_bert_summary(self, text):
-        bert_model = Summarizer()
-        result = bert_model(text, min_length=60)
-        full = ''.join(result)
-        return full
-
     def get_summary(self, text, type):
         text = self.preprocess(text)
         start = time.time()
-        if type == "t5":
-            summary_text = self.get_t5_summary(text)
-        # elif type == "newsum":
-        #     summary_text = self.newsum(text)[0]['summary_text']
-        elif type == "bert":
-            summary_text = self.get_bert_summary(text)
+        if type == "newsum":
+            summary_text = self.newsum(text, min_length=30, max_length=100)[0]['summary_text']
         else:
             summary_text = "Invalid type"
         end = time.time()
@@ -53,13 +42,6 @@ class Summarizer:
             "Length after Summarization": len(summary_text),
             "Percentage Reduction": 100 - round((len(summary_text)/len(text))*100)
         }
-
-    def preprocess(self, text):
-        text = re.sub(r'\([^)]*\)', '', text)
-        text = re.sub('"','', text)
-        text = ' '.join(text.split())
-        return text
-
 
     def get_t5_summary(self, text): 
         model = SimpleT5()
@@ -78,6 +60,12 @@ class Summarizer:
                 {"text": doc["text"], "summary": doc["summary"]} for doc in docs
             ]
         }
+    
+    def preprocess(self, text):
+        text = re.sub(r'\([^)]*\)', '', text)
+        text = re.sub('"','', text)
+        text = ' '.join(text.split())
+        return text
 
     # def truecasing(self, input_text):
     #     sentences = sent_tokenize(input_text, language='english')
