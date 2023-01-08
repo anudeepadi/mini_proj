@@ -8,6 +8,7 @@ import re
 from simplet5 import SimpleT5
 # import re
 # from bleu import list_bleu
+from summarizer import Summarizer
 
 logger = logging.getLogger(__name__)
 
@@ -22,15 +23,21 @@ class Summarizer:
         self.mydb = self.myclient["minor_project"]
         self.mycol = self.mydb["articles"]
 
+    def get_bert_summary(self, text):
+        bert_model = Summarizer()
+        result = bert_model(text, min_length=60)
+        full = ''.join(result)
+        return full
+
     def get_summary(self, text, type):
         text = self.preprocess(text)
         start = time.time()
-        if type == "bert":
-            summary_text = self.get_bert_summary(text)
-        elif type == "t5":
+        if type == "t5":
             summary_text = self.get_t5_summary(text)
-        elif type == "newsum":
-            summary_text = self.newsum(text)[0]['summary_text']
+        # elif type == "newsum":
+        #     summary_text = self.newsum(text)[0]['summary_text']
+        elif type == "bert":
+            summary_text = self.get_bert_summary(text)
         else:
             summary_text = "Invalid type"
         end = time.time()
@@ -53,23 +60,6 @@ class Summarizer:
         text = ' '.join(text.split())
         return text
 
-    def get_bert_summary(self, text):
-        tokenizer = BertTokenizerFast.from_pretrained('bert-large-uncased')
-        model = EncoderDecoderModel.from_encoder_decoder_pretrained(tokenizer, tokenizer)
-        model.config.decoder_start_token_id = tokenizer.cls_token_id
-        model.config.eos_token_id = tokenizer.sep_token_id
-        model.config.pad_token_id = tokenizer.pad_token_id
-        model.config.vocab_size = model.config.encoder.vocab_size
-        model.config.max_length = 142
-        model.config.min_length = 56
-        model.config.no_repeat_ngram_size = 3
-        model.config.early_stopping = True
-        model.config.length_penalty = 2.0
-        model.config.num_beams = 4
-
-        input_ids = tokenizer.encode(text, return_tensors='pt', max_length=1024)
-        summary_ids = model.generate(input_ids)
-        return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
     def get_t5_summary(self, text): 
         model = SimpleT5()
