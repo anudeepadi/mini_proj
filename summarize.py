@@ -1,5 +1,4 @@
-from transformers import pipeline
-from transformers import BertTokenizerFast, EncoderDecoderModel
+from transformers import pipeline, BertTokenizerFast, EncoderDecoderModel
 import logging
 import torch
 import time
@@ -26,7 +25,7 @@ class Summarizer:
         text = self.preprocess(text)
         start = time.time()
         if type == "newsum":
-            summary_text = self.newsum(text, min_length=30, max_length=100)[0]['summary_text']
+            summary_text = self.newsum(text, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
         else:
             summary_text = "Invalid type"
         end = time.time()
