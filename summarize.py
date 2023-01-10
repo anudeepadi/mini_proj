@@ -1,4 +1,5 @@
 from transformers import pipeline, BertTokenizerFast, EncoderDecoderModel
+import transformers
 import logging
 import torch
 import time
@@ -26,6 +27,10 @@ class Summarizer:
         start = time.time()
         if type == "newsum":
             summary_text = self.newsum(text, max_length=100, min_length=30, do_sample=False)[0]['summary_text']
+        elif type == "t5":
+            summary_text = self.summarize_t5(text)
+        elif type == "bert":
+            summary_text = self.summarize_bert(text)
         else:
             summary_text = "Invalid type"
         end = time.time()
@@ -42,10 +47,20 @@ class Summarizer:
             "Percentage Reduction": 100 - round((len(summary_text)/len(text))*100)
         }
 
-    def get_t5_summary(self, text): 
-        model = SimpleT5()
-        model.from_pretrained("t5", "t5-base")
-        return model.predict(text)
+    # def summarize_t5(text, max_length=30):
+    #     model = transformers.T5ForConditionalGeneration.from_pretrained('t5-base')
+    #     input_ids = transformers.tokenizer.encode(text, return_tensors='pt')
+    #     output = model.generate(input_ids, max_length=max_length, num_beams=2, early_stopping=True)
+    #     summary = transformers.tokenizer.decode(output[0], skip_special_tokens=True)
+    #     return summary
+
+    
+    # def summarize_bert(text, max_length=30):
+    #     input_ids = transformers.tokenizer.encode(text, return_tensors='pt')
+    #     model = transformers.BertModel.from_pretrained('bert-base-uncased')
+    #     _, output = model(input_ids)
+    #     summary = transformers.tokenizer.decode(output[0], skip_special_tokens=True)
+    #     return summary[:max_length]
 
     def sendToMongo(self, text, summary):
         mydict = {"text": text, "summary": summary}
